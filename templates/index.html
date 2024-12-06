@@ -230,6 +230,8 @@
             M.FormSelect.init(elems);
         });
 
+        let chartInstance = null; // Global variable to hold the Chart.js instance
+
         async function fetchPredictions() {
             const crop = document.getElementById("crop-select").value;
             const center = document.getElementById("center-select").value;
@@ -279,7 +281,11 @@
 
         function renderGraph(labels, data) {
             const ctx = document.getElementById('priceChart').getContext('2d');
-            new Chart(ctx, {
+            // Destroy the previous chart instance if it exists
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels, // X-axis labels (Months)
