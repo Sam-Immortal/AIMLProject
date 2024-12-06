@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CropVision</title>
+
+    <!-- Materialize CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background-size: cover;
+            margin: 0;
+            font-family: "Times New Roman";
+        }
+        
+        .header {
+            background-color: transparent; 
+            color: white;
+            text-align: center;
+            background: url('/static/images/back3.jpg') no-repeat center center fixed; 
+            padding-top: 125px;
+            padding-bottom: 125px;
+            background-size:cover;
+        }
+        .header h4 {
+            font-weight: bold;
+            font-size: 70px;
+        }
+        .footer {
+            background-color: #7dd852;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .footer h5 {
+            font-weight: bold;
+        }
+        .card {
+            border-radius: 4px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            background-color: transparent;
+        }
+        .card card-image {
+            padding: 0;
+            object-fit: cover;
+        }
+        .card .card-title {
+            color: #00796b; 
+            font-weight: bold;
+        }
+        .hidden-section {
+            display: none;
+        }
+
+        /* Ensures the entire page takes up at least the full viewport height */
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main content area */
+        .content {
+            background-color: transparent;
+            flex: 1;
+            padding: 50px; 
+        }
+
+        #priceChart {
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Fixed footer styling */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .select-wrapper input.select-dropdown {
+            border: 1px solid #00796b; /* Teal darken-2 */
+            border-radius: 8px;
+        }
+
+        /* Responsive styling */
+        @media screen and (max-width: 768px) {
+            .row {
+                margin: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h4>CropVision</h4>
+    </div>
+
+    <!-- Main Container -->
+    <div class="content">
+        <div class="row">
+            <!-- Select Crop Dropdown -->
+            <div class="input-field col s6">
+                <select id="crop-select" onchange="checkSelections()">
+                    <option value="" disabled selected>Select Crop</option>
+                    <option value="Wheat">Wheat</option>
+                    <option value="Rice">Rice</option>
+                    <option value="Atta">Atta</option>
+                    <option value="Gram">Gram</option>
+                    <option value="Tur">Tur</option>
+                    <option value="Urad">Urad</option>
+                    <option value="Moong">Moong</option>
+                    <option value="Masur">Masur</option>
+                    <option value="Groundnut Oil">Groundnut Oil</option>
+                    <option value="Mustard Oil">Mustard Oil</option>
+                    <option value="Vanaspati">Vanaspati</option>
+                    <option value="Soya Oil">Soya Oil</option>
+                    <option value="Sunflower Oil">Sunflower Oil</option>
+                    <option value="Palm Oil">Palm Oil</option>
+                    <option value="Potato">Potato</option>
+                    <option value="Onion">Onion</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Sugar">Sugar</option>
+                    <option value="Gur">Gur</option>
+                    <option value="Milk">Milk</option>
+                    <option value="Tea">Tea</option>
+                    <option value="Salt">Salt</option>
+                </select>
+                <label>Select Crop</label>
+            </div>
+
+            <!-- Select Zone Dropdown -->
+            <div class="input-field col s6">
+                <select id="zone-select" onchange="populateCenters()">
+                    <option value="" disabled selected>Select Zone</option>
+                    <option value="North">North</option>
+                    <option value="South">South</option>
+                    <option value="East">East</option>
+                    <option value="North-East">North-East</option>
+                    <option value="West">West</option>
+                </select>
+                <label>Select Zone</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Select Center Dropdown (dependent on Zone selection) -->
+            <div class="input-field col s12">
+                <select id="center-select" disabled onchange="checkSelections()">
+                    <option value="" disabled selected>Select Center</option>
+                    <!-- Center options will be populated based on Zone selection -->
+                </select>
+                <label>Select Center</label>
+            </div>
+        </div>
+
+        <!-- Hidden Section: Date List, Prediction List, and Image -->
+        <div class="row hidden-section" id="result-section">
+            <!-- Date List Card -->
+            <div class="col s4">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Date</span>
+                        <ul id="month-list" class="list-display">
+                            <!-- Dates will be dynamically added here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction List Card -->
+            <div class="col s4">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Prediction</span>
+                        <ul id="prediction-list" class="list-display">
+                            <!-- Predictions will be dynamically added here -->
+                            
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Card -->
+            <div class="col s4">
+                <div class="card">
+                    <div class="card-image">
+                        <img id="cropImage" src="" alt="Selected Crop Image" style="width: 100%; height: 100%; object-fit: cover;"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Graph Section -->
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Predicted Prices</span>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <h5>Contact Us</h5>
+        <p>+91 8176064005</p>
+        <p>info@cropprices.org.in</p>
+    </div>
+
+    <!-- Materialize JS and jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const elems = document.querySelectorAll('select');
+            M.FormSelect.init(elems);
+        });
+
+        async function fetchPredictions() {
+            try {
+                const response = await fetch('/predict');
+                const data = await response.json();
+
+                const monthList = document.getElementById("month-list");
+                const predictionList = document.getElementById("prediction-list");
+
+                // Clear existing lists
+                monthList.innerHTML = "";
+                predictionList.innerHTML = "";
+
+                // Populate lists with new data
+                data.dates.forEach((date, index) => {
+                    const monthItem = document.createElement("li");
+                    monthItem.textContent = date;
+                    monthList.appendChild(monthItem);
+
+                    const predictionItem = document.createElement("li");
+                    predictionItem.textContent = `Price: Rs. ${data.prices[index]}`;
+                    predictionList.appendChild(predictionItem);
+                });
+
+                // Show hidden sections
+                document.getElementById("result-section").classList.remove("hidden-section");
+
+                // Render graph
+                renderGraph(data.dates, data.prices);
+
+            } catch (error) {
+                console.error("Error fetching predictions:", error);
+            }
+        }
+
+        function renderGraph(labels, data) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels, // X-axis labels (Months)
+                    datasets: [{
+                        label: 'Predicted Prices (Rs./Quintal)',
+                        data: data, // Y-axis data (Prices)
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Fill color
+                        borderColor: 'rgba(75, 192, 192, 1)', // Line color
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2, // Adjust the aspect ratio (width/height)
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price (Rs./Quintal)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to populate centers based on selected zone
+        function populateCenters() {
+            const centerSelect = document.getElementById("center-select");
+            const zone = document.getElementById("zone-select").value;
+
+            // Clear previous options
+            centerSelect.innerHTML = '<option value="" disabled selected>Select Center</option>';
+
+            // Populate based on zone selection
+            let centers = [];
+            if (zone === "North") {
+                centers = ["Chandigarh", "Delhi", "Hisar", "Karnal", "Panchkula", "Gurgaon", "Shimla", "Mandi", "Dharamshala", "Solan", "Una", "Bilaspur-hp", "Chamba", "Hamirpur-HP", "Kullu", "Sirmour", "Kinnaur", "Lahaul & Spiti", "Srinagar", "Jammu", "Poonch", "Kupwara", "Udhampur", "Shopian", "Samba", "Ramban", "Rajouri", "Kishtwar", "Doda", "Baramulla", "Reasi", "Kathua", "Amritsar", "Ludhiana", "Bathinda", "Barnala", "Hoshiarpur", "Faridkot", "Mansa", "Sri Muktsar Sahib", "Dera Bassi", "Sangrur", "Ropar", "Amargarh", "Fatehgarh Sahib", "Ferozepur", "Kapurthala", "Lucknow", "Kanpur", "Varanasi", "Agra", "Jhansi", "Meerut", "Allahabad", "Gorakhpur", "Saharanpur", "Bareilly", "Ayodhya", "Moradabad", "Aligarh", "Mirzapur (Vindhyanchal)", "Banda", "Azamgarh", "Gonda (Devipatan)", "Amethi", "Barabanki", "Bhadohi", "Chandauli", "Farrukhabad", "Ghazipur", "Jaunpur", "UP-Pratapgarh", "Sambhal", "Santkabir Nagar", "Shahjahanpur", "Sitapur", "Sultanpur", "Unnao", "Ambedkar Nagar", "Amroha", "Baghpat", "Bijnor", "Budaun", "Etah", "Fatehpur", "Ghaziabad", "Hardoi", "Jalaun", "Kaushambi", "Kushinagar", "Lakimpur Kheri", "Pilibhit", "Sharaswati", "Siddharth Nagar", "Sonbhadra", "Rampur", "Bahraich", "Basti", "Etawah", "Muzzafarnagar", "Chitrakoot", "Hamirpur-UP", "Deoria", "Hapur", "Bulandshahr", "Kanpur Dehat", "Hathras", "Raebareli", "Lalitpur", "Mohaba", "Gautam Budh Nagar", "Auraiya", "Maharajganj", "Balrampur", "Kannauj", "Mathura", "Firozabad", "Kasganj", "Mainpuri", "Shamli", "Ballia", "Mau", "Dehradun", "Haldwani", "Rudrapur", "Haridwar", "Leh", "Kargil"];
+            } else if (zone === "South") {
+                centers = ["Port Blair", "Mayabunder", "Car Nicobar", "Vijaywada", "Vishakhapatnam", "Kurnool", "Tirupathi", "Jammalamadugu", "Dharmavaram", "Prakasam", "Bengaluru", "Dharwad", "Mangalore", "Mysore", "Bengaluru (East Range)", "Belagavi", "Kalaburagi", "Tumakuru", "Bellary", "Dhavanagere", "Shivamogga", "Vijayapur", "Ramanagara", "Raichur", "Chamarajanagar", "Kolar", "Haveri", "Bagalkot", "Bidar", "Koppal", "Mandya", "Yadgir", "Chikkamagalur", "Bangalore Rural", "Chikkaballapur", "Chitradurga", "Gadag", "Hassan", "Kodagu", "Udupi", "Uttara Kannada", "Vijayanagara", "T.Puram", "Ernakulam", "Kozhikode", "Thrissur", "Palakkad", "Wayanad", "Kasargod", "Kottayam", "Pathanamthitta", "Alapuzha", "Kollam", "Idukki", "Kannur", "Malapuram", "Puducherry", "Chennai", "Madurai", "Dindigul", "Thiruchirapalli", "Coimbatore", "Tirunelveli", "Cuddalore", "Dharmapuri", "Vellore", "Ramanathapuram", "Erode", "Karur", "Perambalur", "Pudukkottai", "Sivagangai", "Thanjavur", "The nilgiris", "Thoothukudi", "Viluppuram", "Virudhunagar", "Kanniyakumari", "Namakkal", "Tiruvannamalai", "Tiruvarur", "Tiruppur", "Tenkasi", "Nagapattinam", "Krishnagiri", "Ariyalur", "Kallakurichi", "Kancheepuram", "Salem", "Theni", "Chengalpattu", "Mayiladuthurai", "Ranipet", "Tirupattur", "Tiruvallur", "Hyderabad", "Karimnagar", "Warangal", "Adilabad", "Suryapet", "Jadcherla", "Khammam", "Medchal", "Nizamabad", "Sangareddy"];
+            } else if (zone === "East") {
+                centers = ["Patna", "Bhagalpur", "Purnia", "Darbhanga", "Gaya", "Muzzafarpur", "Saran", "Munger", "Saharsa", "Madhubani", "Rohtas (Sasaram)", "Motihari", "Samastipur", "Katihar", "Araria", "Nawada", "Khagaria", "Banka", "Arwal", "Aurangabad", "Begusarai", "Bhojpur Ara", "Buxar", "Gopalganj", "Jamui", "Jehanabad", "Kaimur", "Kishanganj", "Lakhisarai", "Medhepura", "Nalanda", "Sheikhpura", "Sheohar", "Sitamarhi", "Siwan", "Supaul", "Vaishali", "West Champaran", "Ranchi", "Gumla", "Sahibganj", "Bokaro", "Lohardaga", "Simdega", "Dhanbad", "Jamshedpur (East Singbhum)", "Giridhi", "Seraikella", "West Singbhum", "Daltonganj", "Deoghar", "Ramgarh", "Pakur", "Jamtara", "Latehar", "Godda", "Koderma", "Bhubaneshwar", "Cuttack", 'Sambalpur', "Jeypore", "Balasore", "Baripada", "Balangir", "Angul", "Boudhgarh", "Dhenkanal", "Jagatsinghpur", "Kandhamal", "Keonjhar", "Malkangiri", "Nabarangpur", "Nayagarh", "Naupada", "Paralakhemundi Gajapati", "Puri", "Rayagada", "Sonepur", "Bhadrak", "Jharsuguda", "Kendrapara", "Jajpur", "Kalahandi", "Kolkata", "Siliguri", "Purulia", "Kharagpur", "Rampurhat", "Malda", "Raiganj", "Alipuruduar", "Asansol", "Balurghat", "Bankura", "Barasat", "Bardhaman", "Baruipur", "Berhampore", "Chinsurah", "Cooch behar", "Howrah", "Jalapiguri", "Jhargram", "Kalimpong", "Krishnagar", "Tamluk"];
+            } else if (zone === "North-East") {
+                centers = ["Itanagar", "Namsai", "Pasighat", "Tawang", "Guwahati", "Barpeta", "Tinsukia", "Dhubri", "Goalpara", "Golaghat", "Mangaldai", "Mushalpur", "udalguri", "Bajali", "Hojai", "Jorhat", "Bongaigaon", "Morigaon", "Sonari", "Tamulpur", "Sivasagar", "Biswanath Chariali", "Dibrugarh", "Karimganj", "Majuli", "Sonitpur Tezpur", "Haflong", "AS-Lakhimpur", "Diphu", "Nalbari", "South Salmara Mankachar", "Kamrup", "Imphal", "Chandel", "Jiribam", "Kangpokpi", "Senapati", "Tamenglong", "Thoubal", "Ukhrul", "Shillong", "Tura", "Jowai", "Sohra", "Mairang", "Nongpoh", "Khliehriat", "Williamnagar", "Nongstoin", "Mawkyrwat", "Aizwal", "Lunglei", "Kolasib", "Mamit", "Champhai", "Serchhip", "Siaha", "Lawngtlai", "Hnahthial", "Khawzawl", "Saitul", "Kohima", "Dimapur", "Tuensang", "Mokochung", "Chumukedima", "Mon", "Peren", "Phek", "Tseminyu", "Wokha", "Zunheboto", "Kiphire", "Longleng", "Niuland", "Shamator", "Noklak", "Gangtok", "Gyalshing", "Namchi", "Soreng", "Mangan", "Pakyong", "Agartala", "Dharmanagar", "Belonia", "TR-Udaipur"];
+            } else if (zone === "West") {
+                centers = ["Raipur", "Durg", "Ambikapur", "Bilaspur-CG", "Jagdalpur", "Dantewada", "Dhamtari", "Rajnandgaon", "Koriya", "Silvasa", "Daman", "Diu", "Panaji", "Margao", "Ahmedabad", "Rajkot", "Surat", "Bhuj", "Selamba", "Waghai", "Bodeli", "Vapi", "Bilimora", "Idar", "Jhalod", "Songash", "Bhopal", "Indore", "Gwalior", "Jabalpur", "Rewa", "Sagar", "Jhabua", "Hoshangabad", "Shahdol", "Ujjain", "Morena", "Anuppur", "Bhind", "Dhar", "Harda", "Katni", "Khandwa", "Mandla", "Rajgarh", "Sidhi", "Chattarpur", "Neemuch", "Burhanpur", "Narshinpur", "Raisen", "Sheopur", "Agar malwa", "Umaria", "Shajapur", "Dewas", "Khargone", "Singrauli", "Chhindwara", "Sehore", "MP-Ashoknagar", "Balaghat", "Guna", "Ratlam", "Satna", "Vidisha", "Alirajpur", "Betul", "Damoh", "Dindori", "Niwari", "Seoni", "Panna", "Tikamgarh", "Datia", "Maihar", "Mumbai", "Nagpur", "Pune", "Nashik", "Mangaon-Raigad", "Dharni", "Latur", "Akluj", "Arni Yavatmal", "Chandrapur", "Karad Satara", "Ahemednagar", "Khultabad", "Islampur", "Kankavli", "Partur", "Gondia", "Jalgaon", "Akola", "Jaipur", "Jodhpur", "Kota", "Udaipur", "Bharatpur", "Ajmer", "Bikaner", "Bundi", "Rajsamand", "Alwar", "Banswara", "Baran", "Barmer", "Bhilwara", "Chhitorgarh", "Churu", "Dholapur", "Dungarpur", "Hanumangarh", "Jaisalmer", "Jalore", "Jhalawar", "Jhunjhunu", "Karauli", "Nagaur", "Pali", "RJ-Pratapgarh", "Sikar", "Sirohi", "Sri Ganganganagar", "Tonk", "Sawai Madhopur"];
+            }
+
+            centers.forEach(center => {
+                const option = document.createElement("option");
+                option.value = center;
+                option.text = center;
+                centerSelect.appendChild(option);
+            });
+
+            // Enable and reinitialize the select element
+            centerSelect.disabled = false;
+            M.FormSelect.init(centerSelect);
+        }
+
+        // Function to check if all selections are made
+        function checkSelections() {
+            const crop = document.getElementById("crop-select").value;
+            const zone = document.getElementById("zone-select").value;
+            const center = document.getElementById("center-select").value;
+            const resultSection = document.getElementById("result-section");
+
+            // Display the result section only if all selections are made
+            if (crop && zone && center) {
+                resultSection.classList.remove("hidden-section");
+                displayCropImage(crop);
+                fetchPredictions(); // Fetch and display predictions on load
+
+            } else {
+                resultSection.classList.add("hidden-section");
+            }
+        }
+        function displayCropImage(cropName) {
+            const formattedCropName = cropName + ".jpg"; 
+            const imagePath = "/static/images/" + formattedCropName; 
+
+            const imgElement = document.getElementById("cropImage"); 
+            imgElement.src = imagePath;
+            imgElement.alt = cropName;
+        }
+
+
+    </script>
+</body>
+</html>
