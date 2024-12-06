@@ -231,9 +231,22 @@
         });
 
         async function fetchPredictions() {
+            const crop = document.getElementById("crop-select").value;
+            const center = document.getElementById("center-select").value;
+
+            if (!crop || !center) {
+                console.error("Both crop and center must be selected.");
+                return;
+            }
+
             try {
-                const response = await fetch('/predict');
+                const response = await fetch(`/predict?crop=${encodeURIComponent(crop)}&center=${encodeURIComponent(center)}`);
                 const data = await response.json();
+
+                if (data.error) {
+                    console.error("Error:", data.error);
+                    return;
+                }
 
                 const monthList = document.getElementById("month-list");
                 const predictionList = document.getElementById("prediction-list");

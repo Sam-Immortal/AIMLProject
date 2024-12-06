@@ -1,12 +1,13 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+import os
 
 app = Flask(__name__)
 
-# Load and preprocess data globally
-DATA_FILE = "templates/Wheat_Bengaluru.csv"
+# Base directory for datasets
+DATASETS_DIR = "templates"
 
 def preprocess_data(file_path):
     """
@@ -77,9 +78,22 @@ def start():
 # Route for predictions
 @app.route('/predict', methods=['GET'])
 def predict():
+    crop = request.args.get('crop')
+    center = request.args.get('center')
+
+    if not crop or not center:
+        return jsonify({"error": "Both crop and center must be selected."}), 400
+
+    # Construct the dataset file name
+    file_name = f"{crop}_{center}.csv".replace(" ", "_").lower()
+    file_path = os.path.join(DATASETS_DIR, file_name)
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": f"Dataset for {crop} in {center} not found."}), 404
+    
     try:
         # Preprocess data
-        processed_data = preprocess_data(DATA_FILE)
+        processed_data = preprocess_data(file_path)
 
         # Generate predictions
         forecast = predict_prices(processed_data)
